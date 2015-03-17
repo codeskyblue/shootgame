@@ -4,58 +4,6 @@ import math
 import pygame
 from pygame.locals import *
 
-class Resource(object):
-    def __init__(self, image, screen, angle=0):
-        if isinstance(image, basestring):
-            self._origimage = pygame.image.load(image)
-        else:
-            self._origimage = image
-        self._image = pygame.transform.rotate(self._origimage, -angle)
-        self._screen = screen
-        self._angle = angle
-        self.pos = [100, 100]
-        self.step = 5
-
-    def move_angle(self, length=None, angle=None):
-        if angle:
-            self._angle = -angle
-        if not length:
-            length = self.step
-        self._image = pygame.transform.rotate(self._origimage, self._angle)
-        xoff = length * math.cos(self._angle/180.0*math.pi)
-        yoff = length * math.sin(self._angle/180.0*math.pi)
-        self.pos = [self.pos[0]+xoff, self.pos[1]+yoff]
-        # fix pos
-        x, y = self.pos
-        width, height = self._image.get_width(), self._image.get_height()
-        self.pos[0] = min(640-width, max(0, x))
-        self.pos[1] = min(480-height, max(0, y))
-
-    def move(self, direction):
-        w, a, s, d = direction
-        vec = [0, 0]
-        if w:
-            vec[1] -= 1
-        if a:
-            vec[0] -= 1
-        if s:
-            vec[1] += 1
-        if d:
-            vec[0] += 1
-        if vec[0] != 0 or vec[1] != 0:
-            angle = math.atan2(vec[1], vec[0])*180.0/math.pi
-            self.move_angle(self.step, angle)
-
-    def draw(self):
-        self.blit(self.pos)
-
-    def blit(self, rect):
-        self._screen.blit(self._image, rect)
-
-class Player(Resource):
-    def __init__(self, *args):
-        super(Player, self).__init__(*args)
-
 class ShootGame():
     def __init__(self):  
         # 2 - Initialize the game
@@ -80,6 +28,7 @@ class ShootGame():
 
         self.keys = [False, False, False, False]
         self.playerpos=[100,100]
+        self.playershootcd = pygame.time.get_ticks()
         self.clock = pygame.time.Clock()
 
     def initGraphics(self):
@@ -170,15 +119,14 @@ class ShootGame():
                     self.keys[3] = False
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                self.shoot.play()
-                mx, my = pygame.mouse.get_pos()
-                x, y = self.playerpos
-                angle = math.atan2(my-y, mx-x)
-                self.arrows.append([
-                    angle, x, y])
-
-        # self.player.move(self.keys)
-        # self.player.draw()
+                if pygame.time.get_ticks() > self.playershootcd:
+                    self.playershootcd = pygame.time.get_ticks() + 600
+                    self.shoot.play()
+                    mx, my = pygame.mouse.get_pos()
+                    x, y = self.playerpos
+                    angle = math.atan2(my-y, mx-x)
+                    self.arrows.append([
+                        angle, x, y])
 
         pygame.display.flip()
 
