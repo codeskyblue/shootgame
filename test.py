@@ -23,7 +23,7 @@ class ShootGame():
 
         self.badtimer=100
         self.badtimer1=0
-        self.badguys=[[640,100]]
+        self.badguys=[[300,100]]
         self.healthvalue=194
 
         self.keys = [False, False, False, False]
@@ -33,18 +33,17 @@ class ShootGame():
 
     def initGraphics(self):
         # 3 - Load images
-        player = pygame.image.load("resources/images/dude.png")
-        castle = pygame.image.load("resources/images/castle.png")
-        badguyimg1 = pygame.image.load("resources/images/badguy.png")
         healthbar = pygame.image.load("resources/images/healthbar.png")
         health = pygame.image.load("resources/images/health.png")
         gameover = pygame.image.load("resources/images/gameover.png")
         youwin = pygame.image.load("resources/images/youwin.png")
-        badguyimg=badguyimg1
+        # badguyimg=badguyimg1
 
+        self.badguyimg = pygame.image.load("resources/images/badguy.png")
         self.player = pygame.image.load("resources/images/dude.png")
         self.arrow = pygame.image.load("resources/images/bullet.png")
         self.grass = pygame.image.load("resources/images/grass.png")
+        # self.castle = pygame.image.load("resources/images/castle.png")
 
     def initSound(self):
         # 3.1 - Load audio
@@ -85,6 +84,10 @@ class ShootGame():
             self.playerpos[0] += 5
         self.screen.blit(self.player, self.playerpos)
 
+    def drawBadguy(self):
+        for badguy in self.badguys:
+            self.screen.blit(self.badguyimg, badguy)
+
     def update(self):
         self.clock.tick(90)
         self.screen.fill(0)
@@ -92,6 +95,7 @@ class ShootGame():
         self.drawGrass()
         self.drawArrows()
         self.drawPlayer()
+        self.drawBadguy()
 
         # 5 - clear the screen before drawing it again
         for event in pygame.event.get():
