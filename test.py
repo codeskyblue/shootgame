@@ -94,7 +94,7 @@ class ShootGame():
         self.shoot = pygame.mixer.Sound("resources/audio/shoot.wav")
         hit.set_volume(0.05)
         enemy.set_volume(0.05)
-        shoot.set_volume(0.05)
+        self.shoot.set_volume(0.05)
         pygame.mixer.music.load('resources/audio/moonlight.wav')
         pygame.mixer.music.play(-1, 0.0)
         pygame.mixer.music.set_volume(0.25)
