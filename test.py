@@ -5,17 +5,25 @@ import pygame
 from pygame.locals import *
 
 class Resource(object):
-    def __init__(self, image_file, screen, angle=0):
-        self._origimage = pygame.image.load(image_file)
-        self._image = pygame.transform.rotate(self._origimage, angle)
+    def __init__(self, image, screen, angle=0):
+        if isinstance(image, basestring):
+            self._origimage = pygame.image.load(image)
+        else:
+            self._origimage = image
+        self._image = pygame.transform.rotate(self._origimage, -angle)
         self._screen = screen
+        self._angle = angle
         self.pos = [100, 100]
         self.step = 5
 
-    def move_angle(self, length, angle):
-        self._image = pygame.transform.rotate(self._origimage, -angle)
-        xoff = length * math.cos(angle/180.0*math.pi)
-        yoff = length * math.sin(angle/180.0*math.pi)
+    def move_angle(self, length=None, angle=None):
+        if angle:
+            self._angle = -angle
+        if not length:
+            length = self.step
+        self._image = pygame.transform.rotate(self._origimage, self._angle)
+        xoff = length * math.cos(self._angle/180.0*math.pi)
+        yoff = length * math.sin(self._angle/180.0*math.pi)
         self.pos = [self.pos[0]+xoff, self.pos[1]+yoff]
         # fix pos
         x, y = self.pos
@@ -53,9 +61,11 @@ class ShootGame():
         # 2 - Initialize the game
         pygame.init()
         pygame.mixer.init()
+        pygame.font.init()
 
-        width, height = 640, 480
-        self.screen=pygame.display.set_mode((width, height))
+        self.width = 640
+        self.height = 480
+        self.screen=pygame.display.set_mode((self.width, self.height))
         self.acc=[0,0]
         self.arrows=[]
 
@@ -76,7 +86,6 @@ class ShootGame():
         # 3 - Load images
         player = pygame.image.load("resources/images/dude.png")
         castle = pygame.image.load("resources/images/castle.png")
-        arrow = pygame.image.load("resources/images/bullet.png")
         badguyimg1 = pygame.image.load("resources/images/badguy.png")
         healthbar = pygame.image.load("resources/images/healthbar.png")
         health = pygame.image.load("resources/images/health.png")
@@ -84,7 +93,8 @@ class ShootGame():
         youwin = pygame.image.load("resources/images/youwin.png")
         badguyimg=badguyimg1
 
-        self.player = Player("resources/images/dude.png", self.screen)
+        self.player = pygame.image.load("resources/images/dude.png")
+        self.arrow = pygame.image.load("resources/images/bullet.png")
         self.grass = pygame.image.load("resources/images/grass.png")
 
     def initSound(self):
@@ -105,11 +115,34 @@ class ShootGame():
             for y in range(h/self.grass.get_height()+1):
                 self.screen.blit(self.grass, (x*self.grass.get_width(), y*self.grass.get_height()))
 
+    def drawArrows(self):
+        for idx, bullet in enumerate(self.arrows):
+            arrow = pygame.transform.rotate(self.arrow, 360-bullet[0]/math.pi*180)
+            bullet[1] += math.cos(bullet[0])*10
+            bullet[2] += math.sin(bullet[0])*10
+            self.screen.blit(arrow, bullet[1:])
+            if bullet[1] > self.width or bullet[1] < 0 or \
+                bullet[2] > self.height or bullet[2] < 0:
+                self.arrows.pop(idx)
+
+    def drawPlayer(self):
+        if self.keys[0]:
+            self.playerpos[1] -= 5
+        if self.keys[1]:
+            self.playerpos[0] -= 5
+        if self.keys[2]:
+            self.playerpos[1] += 5
+        if self.keys[3]:
+            self.playerpos[0] += 5
+        self.screen.blit(self.player, self.playerpos)
+
     def update(self):
         self.clock.tick(90)
         self.screen.fill(0)
 
         self.drawGrass()
+        self.drawArrows()
+        self.drawPlayer()
 
         # 5 - clear the screen before drawing it again
         for event in pygame.event.get():
@@ -135,8 +168,17 @@ class ShootGame():
                     self.keys[2] = False
                 elif event.key == K_d:
                     self.keys[3] = False
-        self.player.move(self.keys)
-        self.player.draw()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.shoot.play()
+                mx, my = pygame.mouse.get_pos()
+                x, y = self.playerpos
+                angle = math.atan2(my-y, mx-x)
+                self.arrows.append([
+                    angle, x, y])
+
+        # self.player.move(self.keys)
+        # self.player.draw()
 
         pygame.display.flip()
 

@@ -11,7 +11,7 @@ while running:
             screen.blit(grass,(x*100,y*100))
     screen.blit(castle,(0,30))
     screen.blit(castle,(0,135))
-     screen.blit(castle,(0,240))
+    screen.blit(castle,(0,240))
     screen.blit(castle,(0,345 ))
 
     # 6 - draw the screen elements
