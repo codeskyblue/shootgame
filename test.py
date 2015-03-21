@@ -28,6 +28,9 @@ class ShootGame():
 
         self.keys = [False, False, False, False]
         self.playerpos=[100,100]
+        self.playerangle = 0
+        self.playerdest = self.playerpos
+        self.playerspeed = 2
         self.playershootcd = pygame.time.get_ticks()
         self.clock = pygame.time.Clock()
 
@@ -82,7 +85,24 @@ class ShootGame():
             self.playerpos[1] += 5
         if self.keys[3]:
             self.playerpos[0] += 5
-        self.screen.blit(self.player, self.playerpos)
+
+        if abs(self.playerpos[0] - self.playerdest[0]) > 5 or \
+            abs(self.playerpos[1] - self.playerdest[1]) > 5:
+            cx, cy = self.playerpos
+            dx, dy = self.playerdest
+            radius = math.atan2(dy-cy, dx-cx)
+            self.playerangle = 360-radius/math.pi*180
+            #self.player = pygame.transform.rotate(self.player, 360-angle/math.pi*180)
+            nx = cx + math.cos(radius)*self.playerspeed
+            ny = cy + math.sin(radius)*self.playerspeed
+            self.playerpos = [nx, ny]
+
+        # if angle:
+        player = pygame.transform.rotate(self.player, self.playerangle)
+        rect = player.get_rect()
+        rect.centerx = self.playerpos[0]
+        rect.centery = self.playerpos[1]
+        self.screen.blit(player, rect)#self.playerpos)
 
     def drawBadguy(self):
         for badguy in self.badguys:
@@ -109,7 +129,7 @@ class ShootGame():
                 elif event.key == K_a:
                     self.keys[1] = True
                 elif event.key == K_s:
-                    self.keys[2] = True
+                    self.playerdest = self.playerpos[:]
                 elif event.key == K_d:
                     self.keys[3] = True
             if event.type == pygame.KEYUP:
@@ -123,14 +143,19 @@ class ShootGame():
                     self.keys[3] = False
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if pygame.time.get_ticks() > self.playershootcd:
-                    self.playershootcd = pygame.time.get_ticks() + 600
-                    self.shoot.play()
-                    mx, my = pygame.mouse.get_pos()
-                    x, y = self.playerpos
-                    angle = math.atan2(my-y, mx-x)
-                    self.arrows.append([
-                        angle, x, y])
+                # right click
+                if event.button == 3: 
+                    self.playerdest = pygame.mouse.get_pos()
+                # left click
+                if event.button == 1:
+                    if pygame.time.get_ticks() > self.playershootcd:
+                        self.playershootcd = pygame.time.get_ticks() + 600
+                        self.shoot.play()
+                        mx, my = pygame.mouse.get_pos()
+                        x, y = self.playerpos
+                        angle = math.atan2(my-y, mx-x)
+                        self.arrows.append([
+                            angle, x, y])
 
         pygame.display.flip()
 
