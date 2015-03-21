@@ -3,10 +3,14 @@ import math
 # import random
 import pygame
 from pygame.locals import *
+from PodSixNet.Connection import ConnectionListener, connection
+from sys import stdin
 
-class ShootGame():
-    def __init__(self):  
+class ShootGame(ConnectionListener):
+    def __init__(self):
         # 2 - Initialize the game
+        self.Connect(("localhost", 12321))
+        connection.Send({"action": "nickname", "nickname": "pig"})
         pygame.init()
         pygame.mixer.init()
         pygame.font.init()
@@ -19,7 +23,6 @@ class ShootGame():
 
         self.initGraphics()
         self.initSound()
-
 
         self.badtimer=100
         self.badtimer1=0
@@ -34,6 +37,14 @@ class ShootGame():
         self.playershootcd = pygame.time.get_ticks()
         self.clock = pygame.time.Clock()
 
+    def Network_error(self, data):
+        print 'network error', data['error'][1]
+        connection.Close()
+
+    def Network_disconnected(self, data):
+        print 'Server disconnected'
+        exit()
+        
     def initGraphics(self):
         # 3 - Load images
         healthbar = pygame.image.load("resources/images/healthbar.png")
@@ -76,6 +87,11 @@ class ShootGame():
                 bullet[2] > self.height or bullet[2] < 0:
                 self.arrows.pop(idx)
 
+    def Network_playerpos(self, data):
+        x = data['x']
+        y = data['y']
+        self.playerpos = [x, y]
+
     def drawPlayer(self):
         if self.keys[0]:
             self.playerpos[1] -= 5
@@ -109,6 +125,9 @@ class ShootGame():
             self.screen.blit(self.badguyimg, badguy)
 
     def update(self):
+        connection.Pump()
+        self.Pump()
+
         self.clock.tick(90)
         self.screen.fill(0)
 
@@ -144,10 +163,11 @@ class ShootGame():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # right click
-                if event.button == 3: 
-                    self.playerdest = pygame.mouse.get_pos()
+                #if event.button == 3: 
+                self.playerdest = pygame.mouse.get_pos()
+                connection.Send({'action': 'player_dest', 'dest': self.playerdest})
                 # left click
-                if event.button == 1:
+                if event.button == 2:
                     if pygame.time.get_ticks() > self.playershootcd:
                         self.playershootcd = pygame.time.get_ticks() + 600
                         self.shoot.play()
