@@ -1,5 +1,6 @@
 # 1 - Import library
 import math
+import time
 # import random
 import pygame
 from pygame.locals import *
@@ -36,6 +37,13 @@ class ShootGame(ConnectionListener):
         self.playerspeed = 2
         self.playershootcd = pygame.time.get_ticks()
         self.clock = pygame.time.Clock()
+        self.lagduration = 0.1
+
+        # update ping time
+        pygame.time.set_timer(pygame.USEREVENT, 1000)
+
+    def Network(self, data):
+        print 'receive:', data
 
     def Network_error(self, data):
         print 'network error', data['error'][1]
@@ -68,7 +76,7 @@ class ShootGame(ConnectionListener):
         enemy.set_volume(0.05)
         self.shoot.set_volume(0.05)
         pygame.mixer.music.load('resources/audio/moonlight.wav')
-        pygame.mixer.music.play(-1, 0.0)
+        #pygame.mixer.music.play(-1, 0.0)
         pygame.mixer.music.set_volume(0.25)
 
     def drawGrass(self):
@@ -87,21 +95,27 @@ class ShootGame(ConnectionListener):
                 bullet[2] > self.height or bullet[2] < 0:
                 self.arrows.pop(idx)
 
-    def Network_playerpos(self, data):
+    def Network_selfpos(self, data):
         x = data['x']
         y = data['y']
-        self.playerpos = [x, y]
+        print data
+        self.playerdest = [x, y]
+
+    def Network_pong(self, data):
+        print time.time()
+        self.lagduration = time.time() - float(data['timestamp'])
+        print 'lag', self.lagduration
 
     def drawPlayer(self):
-        if self.keys[0]:
-            self.playerpos[1] -= 5
-        if self.keys[1]:
-            self.playerpos[0] -= 5
-        if self.keys[2]:
-            self.playerpos[1] += 5
-        if self.keys[3]:
-            self.playerpos[0] += 5
-
+        # if self.keys[0]:
+        #     self.playerpos[1] -= 5
+        # if self.keys[1]:
+        #     self.playerpos[0] -= 5
+        # if self.keys[2]:
+        #     self.playerpos[1] += 5
+        # if self.keys[3]:
+        #     self.playerpos[0] += 5o
+        # Move player to destination
         if abs(self.playerpos[0] - self.playerdest[0]) > 5 or \
             abs(self.playerpos[1] - self.playerdest[1]) > 5:
             cx, cy = self.playerpos
@@ -124,6 +138,17 @@ class ShootGame(ConnectionListener):
         for badguy in self.badguys:
             self.screen.blit(self.badguyimg, badguy)
 
+    def drawOther(self):
+        font = pygame.font.Font(None, 20)
+        if self.lagduration:
+            msec = int(self.lagduration*1000)
+            ping = font.render('Ping: '+str(msec), True, (255, 255, 0))
+            pos = (self.screen.get_width() - ping.get_width()*1.5, 50)
+            self.screen.blit(ping, pos)
+        fpslabel = font.render('FPS: '+str(int(self.clock.get_fps())), True, (255, 255, 0))
+        pos = (self.screen.get_width() - ping.get_width()*1.5, 20)
+        self.screen.blit(fpslabel, pos)
+
     def update(self):
         connection.Pump()
         self.Pump()
@@ -135,6 +160,7 @@ class ShootGame(ConnectionListener):
         self.drawArrows()
         self.drawPlayer()
         self.drawBadguy()
+        self.drawOther()
 
         # 5 - clear the screen before drawing it again
         for event in pygame.event.get():
@@ -142,7 +168,9 @@ class ShootGame(ConnectionListener):
                 pygame.quit()
                 exit(0)
             
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.USEREVENT:
+                connection.Send({'action': 'ping', 'timestamp': str(time.time())})
+            elif event.type == pygame.KEYDOWN:
                 if event.key == K_w:
                     self.keys[0] = True
                 elif event.key == K_a:
@@ -151,7 +179,7 @@ class ShootGame(ConnectionListener):
                     self.playerdest = self.playerpos[:]
                 elif event.key == K_d:
                     self.keys[3] = True
-            if event.type == pygame.KEYUP:
+            elif event.type == pygame.KEYUP:
                 if event.key == K_w:
                     self.keys[0] = False
                 elif event.key == K_a:
@@ -161,11 +189,11 @@ class ShootGame(ConnectionListener):
                 elif event.key == K_d:
                     self.keys[3] = False
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 # right click
                 #if event.button == 3: 
                 self.playerdest = pygame.mouse.get_pos()
-                connection.Send({'action': 'player_dest', 'dest': self.playerdest})
+                connection.Send({'action': 'playerdest', 'dest': self.playerdest})
                 # left click
                 if event.button == 2:
                     if pygame.time.get_ticks() > self.playershootcd:
