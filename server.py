@@ -11,7 +11,7 @@ class Player(pygame.Surface):
         self.nickname = nickname
         self.pos = (100, 100)
         self.dest = (200, 200)
-        self.speed = 2
+        self.speed = 40
         self.angle = 0
         self.uptick = None
 
@@ -32,17 +32,17 @@ class Player(pygame.Surface):
             self.angle = 360-radius/math.pi*180
             #self.player = pygame.transform.rotate(self.player, 360-angle/math.pi*180)
             t = ticks - self.uptick
-            print t
             self.uptick = ticks
-            nx = cx + math.cos(radius)*self.speed*t
-            ny = cy + math.sin(radius)*self.speed*t
-            self.pos = [nx, ny]
-            #self.Send({'action': 'postion', 'position': self.pos})
+            nx = cx + math.cos(radius)*self.speed*t/1000.0
+            ny = cy + math.sin(radius)*self.speed*t/1000.0
+            print 'gap', t, self.speed*t, cx, cy, nx, ny
+            self.pos = map(int, [nx, ny])
 
     def dumps(self):
         return {
             'pos': self.pos,
-            'dest': self.dest
+            'dest': self.dest,
+            'angle': self.angle
         }
 
 class PvPGame():
@@ -104,16 +104,16 @@ class GameServer(Server):
         del self.players[channel]
 
     def Tick(self):
-    	ticks = pygame.time.get_ticks()
+    	ticks = int(time.time()*1000) # pygame.time.get_ticks()
         for channel, player in self.players.items():
             player.update(ticks)
-            channel.Send({'action': 'postion', 'position': player.dumps()})
+            channel.Send({'action': 'position', 'position': player.dumps()})
 
     def Launch(self):
         while True:
             self.Tick()
             self.Pump()
-            time.sleep(0.001)
+            time.sleep(0.1)
 
 if __name__ == '__main__':
     server = GameServer(localaddr=("localhost", 12321))

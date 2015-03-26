@@ -95,11 +95,16 @@ class ShootGame(ConnectionListener):
                 bullet[2] > self.height or bullet[2] < 0:
                 self.arrows.pop(idx)
 
-    def Network_selfpos(self, data):
-        x = data['x']
-        y = data['y']
-        print data
-        self.playerdest = [x, y]
+    # def Network_selfpos(self, data):
+    #     x = data['x']
+    #     y = data['y']
+    #     # print data
+    #     self.playerpos = [x, y]
+
+    def Network_position(self, data):
+        info = data['position']
+        self.playerpos = info['pos']
+        self.playerangle = info['angle']
 
     def Network_pong(self, data):
         print time.time()
@@ -107,25 +112,16 @@ class ShootGame(ConnectionListener):
         print 'lag', self.lagduration
 
     def drawPlayer(self):
-        # if self.keys[0]:
-        #     self.playerpos[1] -= 5
-        # if self.keys[1]:
-        #     self.playerpos[0] -= 5
-        # if self.keys[2]:
-        #     self.playerpos[1] += 5
-        # if self.keys[3]:
-        #     self.playerpos[0] += 5o
-        # Move player to destination
-        if abs(self.playerpos[0] - self.playerdest[0]) > 5 or \
-            abs(self.playerpos[1] - self.playerdest[1]) > 5:
-            cx, cy = self.playerpos
-            dx, dy = self.playerdest
-            radius = math.atan2(dy-cy, dx-cx)
-            self.playerangle = 360-radius/math.pi*180
-            #self.player = pygame.transform.rotate(self.player, 360-angle/math.pi*180)
-            nx = cx + math.cos(radius)*self.playerspeed
-            ny = cy + math.sin(radius)*self.playerspeed
-            self.playerpos = [nx, ny]
+        # if abs(self.playerpos[0] - self.playerdest[0]) > 5 or \
+        #     abs(self.playerpos[1] - self.playerdest[1]) > 5:
+        #     cx, cy = self.playerpos
+        #     dx, dy = self.playerdest
+        #     radius = math.atan2(dy-cy, dx-cx)
+        #     self.playerangle = 360-radius/math.pi*180
+        #     #self.player = pygame.transform.rotate(self.player, 360-angle/math.pi*180)
+        #     nx = cx + math.cos(radius)*self.playerspeed
+        #     ny = cy + math.sin(radius)*self.playerspeed
+        #     self.playerpos = [nx, ny]
 
         # if angle:
         player = pygame.transform.rotate(self.player, self.playerangle)
